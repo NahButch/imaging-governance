@@ -1,0 +1,15 @@
+##fileformat=VCFv4.2
+##source=imaging-governance-synthetic
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth">
+##INFO=<ID=IMPACT,Number=1,Type=String,Description="Predicted impact">
+##INFO=<ID=CLNSIG,Number=1,Type=String,Description="Clinical significance">
+##FILTER=<ID=q10,Description="Quality below 10">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+17	43044295	rs80357713	A	T	90	PASS	IMPACT=HIGH;AF=0.00002;CLNSIG=Pathogenic;DP=80
+13	32339000	rs80359550	CT	C	75	PASS	IMPACT=HIGH;AF=0.00008;CLNSIG=Likely_pathogenic;DP=55
+7	140753336	rs113488022	A	T	88	PASS	IMPACT=MODERATE;AF=0.0004;CLNSIG=Uncertain_significance;DP=62
+1	11796321	rs1801133	G	A	70	PASS	IMPACT=MODERATE;AF=0.31;CLNSIG=Benign;DP=48
+2	21231524	rs693	C	T	66	PASS	IMPACT=MODIFIER;AF=0.52;CLNSIG=Benign;DP=44
+12	25245350	.	C	A,T	60	PASS	IMPACT=HIGH;AF=0.0005;DP=35
+3	37008823	.	G	GA	12	q10	IMPACT=HIGH;AF=0.001;DP=6

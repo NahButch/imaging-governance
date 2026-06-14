@@ -39,7 +39,20 @@ def main() -> int:
         govcore.postcheck_segmentation("liver", [0, 1, 1, 0], [1, 2, 2], [1.0, 1.0, 1.0]),
         "seg_postcheck",
     )
-    _check_report(govcore.score_vcf("##fileformat=VCFv4.2\n"), "vcf_score")
+
+    # vcf_score has its own per-variant shape (not the check-list Report).
+    vcf = govcore.score_vcf(
+        "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+        "1\t100\trs1\tA\tT\t80\tPASS\tIMPACT=HIGH;AF=0.00005;CLNSIG=Pathogenic;DP=60\n"
+    )
+    assert vcf["module"] == "vcf_score", vcf
+    for key in ("summary", "parse_ok", "variant_count", "variants", "scoring_model"):
+        assert key in vcf, f"vcf_score missing key {key!r}"
+    assert vcf["variant_count"] == 1, vcf
+    v = vcf["variants"][0]
+    assert v["tier"] == "high", v
+    assert v["components"], "no score provenance"
+    print(f"score_vcf -> 1 variant, tier={v['tier']}, score={v['total_score']}")
 
     print("OK: govcore PyO3 boundary verified.")
     return 0
