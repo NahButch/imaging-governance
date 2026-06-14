@@ -1,0 +1,6 @@
+# Space #2 Python deps. The deterministic core `govcore` is a Rust extension
+# built from source by the Dockerfile (see ../../crates/govcore). CPU-only; no
+# torch / GPU. The 'model' is a tiny numpy proposer (see model/mock_model.py).
+gradio>=4.44,<6
+numpy>=1.26
+pillow>=10.0
