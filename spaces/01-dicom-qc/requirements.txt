@@ -1,0 +1,4 @@
+# Space #1 Python deps. The deterministic core `govcore` is a Rust extension
+# built from source by the Dockerfile (see ../../crates/govcore) — it is NOT a
+# PyPI package.
+gradio>=4.44,<6
