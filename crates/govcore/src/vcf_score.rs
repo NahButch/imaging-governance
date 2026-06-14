@@ -26,6 +26,9 @@ const CLNSIG_VUS: f64 = 0.5;
 const CLNSIG_LIKELY_BENIGN: f64 = -2.0;
 const CLNSIG_BENIGN: f64 = -3.0;
 
+const KNOWN_ID_BONUS: f64 = 0.5;
+const INVALID_ALLELE_PENALTY: f64 = -2.0;
+
 const TIER_HIGH: f64 = 8.0;
 const TIER_MODERATE: f64 = 4.0;
 const TIER_LOW: f64 = 1.5;
@@ -253,6 +256,33 @@ fn quality_component(
     }
 }
 
+fn catalogued_component(id: &str) -> ScoreComponent {
+    let known = id != "." && !id.trim().is_empty();
+    let (points, detail) = if known {
+        (KNOWN_ID_BONUS, format!("catalogued variant (ID={id})"))
+    } else {
+        (0.0, "novel — no catalog ID assigned".to_string())
+    };
+    ScoreComponent { name: "catalogued".to_string(), detail, value: json!(id), points }
+}
+
+fn allele_validity_component(reference: &str, alt: &str) -> ScoreComponent {
+    let nucleotides = |s: &str| !s.is_empty() && s.chars().all(|c| matches!(c.to_ascii_uppercase(), 'A' | 'C' | 'G' | 'T' | 'N'));
+    let ref_ok = nucleotides(reference);
+    let alt_ok = alt.starts_with('<') || alt == "*" || nucleotides(alt);
+    let (points, detail) = if ref_ok && alt_ok {
+        (0.0, format!("REF '{reference}' / ALT '{alt}' are valid"))
+    } else {
+        (INVALID_ALLELE_PENALTY, format!("invalid nucleotide(s) in REF '{reference}' / ALT '{alt}'"))
+    };
+    ScoreComponent {
+        name: "allele_validity".to_string(),
+        detail,
+        value: json!({ "ref_ok": ref_ok, "alt_ok": alt_ok }),
+        points,
+    }
+}
+
 fn tier_of(score: f64) -> &'static str {
     if score >= TIER_HIGH {
         "high"
@@ -283,6 +313,8 @@ fn score_record(
         rarity_component(info),
         clinical_component(info),
         quality_component(qual, filter, info),
+        catalogued_component(id),
+        allele_validity_component(reference, alt),
     ];
     let total: f64 = components.iter().map(|c| c.points).sum();
     let total = (total * 1000.0).round() / 1000.0; // stable rounding
@@ -306,6 +338,8 @@ fn scoring_model_json() -> Value {
         "clinical_significance": { "pathogenic": CLNSIG_PATHOGENIC, "likely_pathogenic": CLNSIG_LIKELY_PATHOGENIC, "vus": CLNSIG_VUS, "likely_benign": CLNSIG_LIKELY_BENIGN, "benign": CLNSIG_BENIGN },
         "rarity_points": { "lt_0.0001": 3.0, "lt_0.001": 2.0, "lt_0.01": 1.0, "lt_0.05": 0.5, "ge_0.05": 0.0 },
         "quality_filter": { "qual_ge_50": 1.0, "qual_ge_20": 0.5, "dp_lt_10": -1.0, "filter_not_pass": -2.0 },
+        "catalogued": { "known_id": KNOWN_ID_BONUS },
+        "allele_validity": { "invalid_nucleotide": INVALID_ALLELE_PENALTY },
         "tiers": { "high": TIER_HIGH, "moderate": TIER_MODERATE, "low": TIER_LOW }
     })
 }
@@ -444,9 +478,26 @@ mod tests {
     fn provenance_present_on_every_component() {
         let r = score_vcf(&vcf("1\t700\t.\tA\tT\t99\tPASS\tIMPACT=MODERATE;AF=0.0003;CLNSIG=Uncertain_significance;DP=30"));
         let v = only(&r);
-        assert_eq!(v.components.len(), 4);
+        assert_eq!(v.components.len(), 6);
         for c in &v.components {
             assert!(!c.detail.is_empty(), "component {} lacks provenance", c.name);
         }
+    }
+
+    #[test]
+    fn catalogued_id_adds_bonus() {
+        let r = score_vcf(&vcf("1\t800\trs999\tA\tT\t50\tPASS\t."));
+        let c = only(&r).components.iter().find(|c| c.name == "catalogued").unwrap().clone();
+        assert_eq!(c.points, KNOWN_ID_BONUS);
+        let r2 = score_vcf(&vcf("1\t800\t.\tA\tT\t50\tPASS\t."));
+        let c2 = only(&r2).components.iter().find(|c| c.name == "catalogued").unwrap().clone();
+        assert_eq!(c2.points, 0.0);
+    }
+
+    #[test]
+    fn invalid_allele_penalised() {
+        let r = score_vcf(&vcf("1\t900\t.\tA\tZ\t50\tPASS\t."));
+        let c = only(&r).components.iter().find(|c| c.name == "allele_validity").unwrap().clone();
+        assert_eq!(c.points, INVALID_ALLELE_PENALTY);
     }
 }

@@ -60,6 +60,10 @@ struct Instance {
     instance_number: Option<i64>,
     rows: Option<i64>,
     columns: Option<i64>,
+    bits_allocated: Option<i64>,
+    samples_per_pixel: Option<i64>,
+    pixel_data_len: Option<usize>,
+    frame_of_ref: Option<String>,
     position: Option<[f64; 3]>,
     orientation: Option<[f64; 6]>,
     /// PHI tags found populated: (field name, severity "direct"|"indirect", masked preview).
@@ -116,6 +120,10 @@ fn read_instance(path: &str) -> Instance {
         instance_number: None,
         rows: None,
         columns: None,
+        bits_allocated: None,
+        samples_per_pixel: None,
+        pixel_data_len: None,
+        frame_of_ref: None,
         position: None,
         orientation: None,
         phi_hits: Vec::new(),
@@ -138,6 +146,14 @@ fn read_instance(path: &str) -> Instance {
     inst.instance_number = int_of(&obj, tags::INSTANCE_NUMBER);
     inst.rows = int_of(&obj, tags::ROWS);
     inst.columns = int_of(&obj, tags::COLUMNS);
+    inst.bits_allocated = int_of(&obj, tags::BITS_ALLOCATED);
+    inst.samples_per_pixel = int_of(&obj, tags::SAMPLES_PER_PIXEL);
+    inst.frame_of_ref = str_of(&obj, tags::FRAME_OF_REFERENCE_UID);
+    inst.pixel_data_len = obj
+        .element(tags::PIXEL_DATA)
+        .ok()
+        .and_then(|e| e.to_bytes().ok())
+        .map(|b| b.len());
 
     if let Some(v) = floats_of(&obj, tags::IMAGE_POSITION_PATIENT) {
         if v.len() == 3 {
@@ -472,6 +488,72 @@ fn check_completeness(readable: &[&Instance]) -> Check {
     )
 }
 
+fn check_pixeldata(readable: &[&Instance]) -> Check {
+    let mut mismatches = Vec::new();
+    let mut missing = 0usize;
+    let mut checked = 0usize;
+    for inst in readable {
+        let (Some(rows), Some(cols)) = (inst.rows, inst.columns) else {
+            continue; // can't assess without dimensions (header check owns that)
+        };
+        let bits = inst.bits_allocated.unwrap_or(16);
+        let samples = inst.samples_per_pixel.unwrap_or(1);
+        let expected = (rows * cols * samples * bits / 8) as usize;
+        match inst.pixel_data_len {
+            None => missing += 1,
+            Some(actual) => {
+                checked += 1;
+                // Encapsulated/compressed pixel data is shorter than the raw
+                // size; only flag when stored *larger* or grossly truncated.
+                if actual != expected && actual < expected {
+                    mismatches.push(json!({
+                        "path": inst.path, "expected_bytes": expected, "actual_bytes": actual
+                    }));
+                }
+            }
+        }
+    }
+    let (status, detail) = if !mismatches.is_empty() {
+        (CheckStatus::Fail, format!("{} instance(s) have PixelData shorter than Rows×Cols×bits imply.", mismatches.len()))
+    } else if missing > 0 {
+        (CheckStatus::Warn, format!("{missing} instance(s) declare image dimensions but carry no PixelData."))
+    } else if checked == 0 {
+        (CheckStatus::Pass, "No pixel data to assess.".to_string())
+    } else {
+        (CheckStatus::Pass, format!("PixelData length consistent with image dimensions on {checked} instance(s)."))
+    };
+    Check::new(
+        "pixeldata.consistency",
+        "Pixel data consistency",
+        status,
+        detail,
+        json!({ "checked": checked, "missing_pixeldata": missing, "mismatches": mismatches }),
+    )
+}
+
+fn check_frame_of_reference(readable: &[&Instance]) -> Check {
+    let present: Vec<&String> = readable.iter().filter_map(|i| i.frame_of_ref.as_ref()).collect();
+    let mut distinct: Vec<&String> = present.clone();
+    distinct.sort();
+    distinct.dedup();
+    let (status, detail) = if distinct.len() > 1 {
+        (CheckStatus::Fail, format!("{} distinct FrameOfReferenceUIDs — slices are not in one spatial frame.", distinct.len()))
+    } else if !present.is_empty() && present.len() != readable.len() {
+        (CheckStatus::Warn, format!("FrameOfReferenceUID present on {}/{} instances only.", present.len(), readable.len()))
+    } else if present.is_empty() {
+        (CheckStatus::Pass, "No FrameOfReferenceUID present (uniformly absent).".to_string())
+    } else {
+        (CheckStatus::Pass, "All instances share one FrameOfReferenceUID.".to_string())
+    };
+    Check::new(
+        "geometry.frame_of_reference",
+        "Frame-of-reference consistency",
+        status,
+        detail,
+        json!({ "present": present.len(), "total": readable.len(), "distinct": distinct.len() }),
+    )
+}
+
 fn check_phi(readable: &[&Instance]) -> Check {
     let mut direct = Vec::new();
     let mut indirect = Vec::new();
@@ -522,8 +604,10 @@ pub fn qc_series(paths: &[String]) -> Report {
     let mut checks = vec![check_ingest(&instances)];
     if !readable.is_empty() {
         checks.push(check_required_tags(&readable));
+        checks.push(check_pixeldata(&readable));
         checks.push(check_modality_sop(&readable));
         checks.push(check_series_uniformity(&readable));
+        checks.push(check_frame_of_reference(&readable));
         checks.push(check_orientation(&readable));
         checks.push(check_position_monotonic(&readable));
         checks.push(check_slice_spacing(&readable));
@@ -555,8 +639,12 @@ mod tests {
         obj.put(DataElement::new(tags::SERIES_INSTANCE_UID, VR::UI, "1.2.3.100"));
         obj.put(DataElement::new(tags::STUDY_INSTANCE_UID, VR::UI, "1.2.3.10"));
         obj.put(DataElement::new(tags::MODALITY, VR::CS, "CT"));
-        obj.put(DataElement::new(tags::ROWS, VR::US, PrimitiveValue::from(512_u16)));
-        obj.put(DataElement::new(tags::COLUMNS, VR::US, PrimitiveValue::from(512_u16)));
+        // 8x8, 16-bit, 1 sample -> 128 bytes of pixel data (consistent by default).
+        obj.put(DataElement::new(tags::ROWS, VR::US, PrimitiveValue::from(8_u16)));
+        obj.put(DataElement::new(tags::COLUMNS, VR::US, PrimitiveValue::from(8_u16)));
+        obj.put(DataElement::new(tags::BITS_ALLOCATED, VR::US, PrimitiveValue::from(16_u16)));
+        obj.put(DataElement::new(tags::SAMPLES_PER_PIXEL, VR::US, PrimitiveValue::from(1_u16)));
+        obj.put(DataElement::new(tags::PIXEL_DATA, VR::OB, PrimitiveValue::from(vec![0_u8; 128])));
         obj.put(DataElement::new(
             tags::IMAGE_ORIENTATION_PATIENT,
             VR::DS,
@@ -720,5 +808,35 @@ mod tests {
         });
         let report = qc_series(&[a, b]);
         assert_eq!(*status_of(&report, "series.uniformity"), CheckStatus::Fail);
+    }
+
+    #[test]
+    fn truncated_pixeldata_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = make_file(dir.path(), "px.dcm", |o| {
+            o.put(DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "1"));
+            o.put(DataElement::new(tags::IMAGE_POSITION_PATIENT, VR::DS, ds(&[0.0, 0.0, 0.0])));
+            // 8x8x16-bit implies 128 bytes; supply only 64.
+            o.put(DataElement::new(tags::PIXEL_DATA, VR::OB, PrimitiveValue::from(vec![0_u8; 64])));
+        });
+        let report = qc_series(&[path]);
+        assert_eq!(*status_of(&report, "pixeldata.consistency"), CheckStatus::Fail);
+    }
+
+    #[test]
+    fn mixed_frame_of_reference_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let a = make_file(dir.path(), "fa.dcm", |o| {
+            o.put(DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "1"));
+            o.put(DataElement::new(tags::IMAGE_POSITION_PATIENT, VR::DS, ds(&[0.0, 0.0, 0.0])));
+            o.put(DataElement::new(tags::FRAME_OF_REFERENCE_UID, VR::UI, "1.2.3.500"));
+        });
+        let b = make_file(dir.path(), "fb.dcm", |o| {
+            o.put(DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "2"));
+            o.put(DataElement::new(tags::IMAGE_POSITION_PATIENT, VR::DS, ds(&[0.0, 0.0, 2.0])));
+            o.put(DataElement::new(tags::FRAME_OF_REFERENCE_UID, VR::UI, "1.2.3.501"));
+        });
+        let report = qc_series(&[a, b]);
+        assert_eq!(*status_of(&report, "geometry.frame_of_reference"), CheckStatus::Fail);
     }
 }

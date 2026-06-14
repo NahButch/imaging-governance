@@ -20,6 +20,9 @@ const BORDER_FAIL_FRAC: f64 = 0.10;
 /// Largest-component share of foreground below which the mask looks fragmented.
 const FRAG_WARN_FRAC: f64 = 0.98;
 const FRAG_FAIL_FRAC: f64 = 0.90;
+/// Bounding-box fill below which a solid structure looks implausibly diffuse.
+const COMPACT_WARN_FRAC: f64 = 0.15;
+const COMPACT_FAIL_FRAC: f64 = 0.05;
 
 /// Plausible volume ranges (millilitres) for a labeled structure. Deliberately
 /// lenient — the point is to catch order-of-magnitude implausibility.
@@ -109,6 +112,33 @@ fn border_foreground(mask: &[u8], z: usize, y: usize, x: usize) -> usize {
         }
     }
     on_border
+}
+
+/// Fraction of the foreground's axis-aligned bounding box that is foreground,
+/// plus the bounding-box dimensions `[dz, dy, dx]`. A compact solid fills a
+/// large share of its box; scattered or thin masks fill very little.
+fn bbox_fill(mask: &[u8], z: usize, y: usize, x: usize) -> (f64, [usize; 3]) {
+    let idx = |zz: usize, yy: usize, xx: usize| (zz * y + yy) * x + xx;
+    let (mut z0, mut y0, mut x0) = (usize::MAX, usize::MAX, usize::MAX);
+    let (mut z1, mut y1, mut x1) = (0usize, 0usize, 0usize);
+    let mut fg = 0usize;
+    for zz in 0..z {
+        for yy in 0..y {
+            for xx in 0..x {
+                if mask[idx(zz, yy, xx)] != 0 {
+                    fg += 1;
+                    z0 = z0.min(zz); y0 = y0.min(yy); x0 = x0.min(xx);
+                    z1 = z1.max(zz); y1 = y1.max(yy); x1 = x1.max(xx);
+                }
+            }
+        }
+    }
+    if fg == 0 {
+        return (0.0, [0, 0, 0]);
+    }
+    let dims = [z1 - z0 + 1, y1 - y0 + 1, x1 - x0 + 1];
+    let bbox_vol = dims[0] * dims[1] * dims[2];
+    (fg as f64 / bbox_vol as f64, dims)
 }
 
 /// Apply deterministic plausibility gates to a segmentation mask.
@@ -246,6 +276,25 @@ pub fn postcheck_segmentation(label: &str, mask: &[u8], shape: &[usize], spacing
         json!({ "border_voxels": border, "border_fraction": border_frac, "warn_at": BORDER_WARN_FRAC, "fail_at": BORDER_FAIL_FRAC }),
     ));
 
+    // ---- compactness (bounding-box fill) ----
+    let (fill, bbox) = bbox_fill(mask, z, y, x);
+    let (cpstatus, cpdetail) = if foreground == 0 {
+        (CheckStatus::Pass, "No foreground to assess for compactness.".to_string())
+    } else if fill < COMPACT_FAIL_FRAC {
+        (CheckStatus::Fail, format!("Fills only {:.1}% of its bounding box — implausibly diffuse for a solid structure.", fill * 100.0))
+    } else if fill < COMPACT_WARN_FRAC {
+        (CheckStatus::Warn, format!("Fills {:.1}% of its bounding box — sparse/elongated shape.", fill * 100.0))
+    } else {
+        (CheckStatus::Pass, format!("Fills {:.1}% of its bounding box — compact.", fill * 100.0))
+    };
+    checks.push(Check::new(
+        "compactness.bbox_fill",
+        "Shape compactness",
+        cpstatus,
+        cpdetail,
+        json!({ "bbox_fill_fraction": fill, "bounding_box": bbox, "warn_at": COMPACT_WARN_FRAC, "fail_at": COMPACT_FAIL_FRAC }),
+    ));
+
     Report::from_checks("seg_postcheck", with_gate(checks))
 }
 
@@ -370,6 +419,19 @@ mod tests {
         mask[(3 * 10 + 3) * 10 + 3] = 5; // stray second label
         let r = postcheck_segmentation("lesion", &mask, &shape, &[1.0, 1.0, 1.0]);
         assert_eq!(check(&r, "label.consistency").status, CheckStatus::Warn);
+    }
+
+    #[test]
+    fn diffuse_scatter_fails_compactness() {
+        let shape = [10, 10, 10];
+        // A few stray voxels spread to opposite corners: huge bbox, tiny fill.
+        let mut mask = vec![0u8; 1000];
+        for (zz, yy, xx) in [(1, 1, 1), (1, 1, 8), (8, 8, 1), (8, 8, 8)] {
+            mask[(zz * 10 + yy) * 10 + xx] = 1;
+        }
+        let r = postcheck_segmentation("lesion", &mask, &shape, &[1.0, 1.0, 1.0]);
+        assert_eq!(check(&r, "compactness.bbox_fill").status, CheckStatus::Fail, "{r:?}");
+        assert!(!gated(&r));
     }
 
     #[test]
