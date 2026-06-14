@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 564" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+<rect width="1040" height="564" rx="16" fill="#ffffff" stroke="#e2e5ea" stroke-width="2"/>
+<rect width="1040" height="6" rx="3" fill="#d6602e"/>
+<text x="28" y="46" font-size="23" font-weight="800" fill="#1b2230">DICOM QC — Space #1</text>
+<text x="28" y="72" font-size="14" fill="#5b6573">data/qc-corpus/residual_phi · 5-slice CT</text>
+<rect x="812" y="28" width="200" height="40" rx="20" fill="#db4d36"/>
+<text x="912" y="54" font-size="16" font-weight="800" fill="#fff" text-anchor="middle">FAIL</text>
+<rect x="28" y="82" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="100" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="100" font-size="15" font-weight="700" fill="#1b2230">Ingest / readability</text>
+<text x="470" y="100" font-size="14" fill="#5b6573">All 5 file(s) parsed as DICOM.</text>
+<rect x="28" y="120" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="138" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="138" font-size="15" font-weight="700" fill="#1b2230">Required header tags</text>
+<text x="470" y="138" font-size="14" fill="#5b6573">All required header tags present on every instance.</text>
+<rect x="28" y="158" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="176" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="176" font-size="15" font-weight="700" fill="#1b2230">Pixel data consistency</text>
+<text x="470" y="176" font-size="14" fill="#5b6573">PixelData length consistent with image dimensions on 5 instance(s).</text>
+<rect x="28" y="196" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="214" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="214" font-size="15" font-weight="700" fill="#1b2230">Modality / SOP class sanity</text>
+<text x="470" y="214" font-size="14" fill="#5b6573">Modality ["CT"] recognised; SOP class present.</text>
+<rect x="28" y="234" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="252" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="252" font-size="15" font-weight="700" fill="#1b2230">Series uniformity</text>
+<text x="470" y="252" font-size="14" fill="#5b6573">All instances share one series and study.</text>
+<rect x="28" y="272" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="290" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="290" font-size="15" font-weight="700" fill="#1b2230">Frame-of-reference consistency</text>
+<text x="470" y="290" font-size="14" fill="#5b6573">No FrameOfReferenceUID present (uniformly absent).</text>
+<rect x="28" y="310" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="328" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="328" font-size="15" font-weight="700" fill="#1b2230">Slice orientation consistency</text>
+<text x="470" y="328" font-size="14" fill="#5b6573">ImageOrientationPatient consistent across all slices.</text>
+<rect x="28" y="348" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="366" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="366" font-size="15" font-weight="700" fill="#1b2230">Slice position monotonicity</text>
+<text x="470" y="366" font-size="14" fill="#5b6573">Slice positions advance monotonically with instance number.</text>
+<rect x="28" y="386" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="404" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="404" font-size="15" font-weight="700" fill="#1b2230">Uniform slice spacing</text>
+<text x="470" y="404" font-size="14" fill="#5b6573">Uniform spacing ~2.000 mm (spread 0.0000 mm).</text>
+<rect x="28" y="424" width="86" height="26" rx="6" fill="#21a366"/>
+<text x="71" y="442" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">PASS</text>
+<text x="130" y="442" font-size="15" font-weight="700" fill="#1b2230">Series completeness</text>
+<text x="470" y="442" font-size="14" fill="#5b6573">Instance numbers 1–5 contiguous, no gaps.</text>
+<rect x="28" y="462" width="86" height="26" rx="6" fill="#db4d36"/>
+<text x="71" y="480" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">FAIL</text>
+<text x="130" y="480" font-size="15" font-weight="700" fill="#1b2230">PHI-leak scan</text>
+<text x="470" y="480" font-size="14" fill="#5b6573">15 populated direct-identifier PHI tag(s) found — series is NOT de-identified.</text>
+<line x1="28" y1="524" x2="1012" y2="524" stroke="#eef0f3" stroke-width="1.5"/>
+<text x="28" y="546" font-size="13" fill="#8a93a3">deterministic · <tspan font-weight="700" fill="#11868a">govcore</tspan> (Rust core) · same input → same report</text>
+</svg>
