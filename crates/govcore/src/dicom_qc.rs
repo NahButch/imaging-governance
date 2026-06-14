@@ -839,4 +839,62 @@ mod tests {
         let report = qc_series(&[a, b]);
         assert_eq!(*status_of(&report, "geometry.frame_of_reference"), CheckStatus::Fail);
     }
+
+    #[test]
+    fn empty_input_fails_ingest() {
+        let report = qc_series(&[]);
+        assert_eq!(*status_of(&report, "ingest.readable"), CheckStatus::Fail);
+        assert_eq!(report.verdict, CheckStatus::Fail);
+    }
+
+    #[test]
+    fn unknown_modality_warns() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = make_file(dir.path(), "mod.dcm", |o| {
+            o.put(DataElement::new(tags::MODALITY, VR::CS, "ZZ"));
+            o.put(DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "1"));
+            o.put(DataElement::new(tags::IMAGE_POSITION_PATIENT, VR::DS, ds(&[0.0, 0.0, 0.0])));
+        });
+        let report = qc_series(&[path]);
+        assert_eq!(*status_of(&report, "modality.sop_sanity"), CheckStatus::Warn);
+    }
+
+    #[test]
+    fn quasi_identifier_only_warns_not_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = make_file(dir.path(), "inst.dcm", |o| {
+            o.put(DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "1"));
+            o.put(DataElement::new(tags::IMAGE_POSITION_PATIENT, VR::DS, ds(&[0.0, 0.0, 0.0])));
+            o.put(DataElement::new(tags::INSTITUTION_NAME, VR::LO, "General Hospital"));
+        });
+        let report = qc_series(&[path]);
+        assert_eq!(*status_of(&report, "anonymization.phi"), CheckStatus::Warn);
+    }
+
+    #[test]
+    fn duplicate_instance_numbers_warn() {
+        let dir = tempfile::tempdir().unwrap();
+        let a = make_file(dir.path(), "d1.dcm", |o| {
+            o.put(DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "1"));
+            o.put(DataElement::new(tags::IMAGE_POSITION_PATIENT, VR::DS, ds(&[0.0, 0.0, 0.0])));
+        });
+        let b = make_file(dir.path(), "d2.dcm", |o| {
+            o.put(DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "1"));
+            o.put(DataElement::new(tags::IMAGE_POSITION_PATIENT, VR::DS, ds(&[0.0, 0.0, 2.0])));
+        });
+        let report = qc_series(&[a, b]);
+        assert_eq!(*status_of(&report, "completeness.instance_numbers"), CheckStatus::Warn);
+    }
+
+    #[test]
+    fn missing_pixeldata_warns() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = make_file(dir.path(), "nopx.dcm", |o| {
+            o.put(DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "1"));
+            o.put(DataElement::new(tags::IMAGE_POSITION_PATIENT, VR::DS, ds(&[0.0, 0.0, 0.0])));
+            o.remove_element(tags::PIXEL_DATA); // dimensions present, pixels absent
+        });
+        let report = qc_series(&[path]);
+        assert_eq!(*status_of(&report, "pixeldata.consistency"), CheckStatus::Warn);
+    }
 }

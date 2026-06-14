@@ -440,4 +440,31 @@ mod tests {
         assert_eq!(r.verdict, CheckStatus::Fail);
         assert!(!gated(&r));
     }
+
+    #[test]
+    fn shape_product_mismatch_fails() {
+        // shape is 3-D but its product (12) doesn't match mask length (8).
+        let r = postcheck_segmentation("lesion", &[1, 0, 1, 0, 1, 0, 1, 0], &[2, 2, 3], &[1.0, 1.0, 1.0]);
+        assert_eq!(check(&r, "shape.valid").status, CheckStatus::Fail);
+        assert!(!gated(&r));
+    }
+
+    #[test]
+    fn entire_volume_foreground_fails() {
+        let shape = [8, 8, 8];
+        let mask = vec![1u8; 8 * 8 * 8];
+        let r = postcheck_segmentation("lesion", &mask, &shape, &[1.0, 1.0, 1.0]);
+        assert_eq!(check(&r, "label.consistency").status, CheckStatus::Fail);
+        assert!(!gated(&r));
+    }
+
+    #[test]
+    fn oversized_liver_fails_volume() {
+        // 14^3 solid cube at 10mm spacing -> 2744 mL, above the 2500 mL liver bound.
+        let shape = [16, 16, 16];
+        let mask = box_mask((16, 16, 16), (1, 15), (1, 15), (1, 15), 1);
+        let r = postcheck_segmentation("liver", &mask, &shape, &[10.0, 10.0, 10.0]);
+        assert_eq!(check(&r, "volume.plausibility").status, CheckStatus::Fail);
+        assert!(!gated(&r));
+    }
 }

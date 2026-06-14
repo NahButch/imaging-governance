@@ -112,3 +112,54 @@ impl Report {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn chk(status: CheckStatus) -> Check {
+        Check::new("id", "name", status, "detail", json!({}))
+    }
+
+    #[test]
+    fn status_orders_pass_warn_fail() {
+        assert!(CheckStatus::Pass < CheckStatus::Warn);
+        assert!(CheckStatus::Warn < CheckStatus::Fail);
+        assert_eq!(CheckStatus::Pass.worse(CheckStatus::Fail), CheckStatus::Fail);
+        assert_eq!(CheckStatus::Warn.worse(CheckStatus::Pass), CheckStatus::Warn);
+        assert_eq!(CheckStatus::Fail.worse(CheckStatus::Warn), CheckStatus::Fail);
+    }
+
+    #[test]
+    fn verdict_is_worst_with_correct_counts() {
+        let r = Report::from_checks(
+            "m",
+            vec![chk(CheckStatus::Pass), chk(CheckStatus::Warn), chk(CheckStatus::Fail), chk(CheckStatus::Pass)],
+        );
+        assert_eq!(r.verdict, CheckStatus::Fail);
+        assert_eq!(r.counts.pass, 2);
+        assert_eq!(r.counts.warn, 1);
+        assert_eq!(r.counts.fail, 1);
+        assert_eq!(r.module, "m");
+    }
+
+    #[test]
+    fn all_pass_yields_pass_verdict() {
+        let r = Report::from_checks("m", vec![chk(CheckStatus::Pass), chk(CheckStatus::Pass)]);
+        assert_eq!(r.verdict, CheckStatus::Pass);
+        assert!(r.summary.starts_with("PASS"));
+    }
+
+    #[test]
+    fn warn_without_fail_yields_warn_verdict() {
+        let r = Report::from_checks("m", vec![chk(CheckStatus::Pass), chk(CheckStatus::Warn)]);
+        assert_eq!(r.verdict, CheckStatus::Warn);
+    }
+
+    #[test]
+    fn status_serializes_lowercase() {
+        assert_eq!(serde_json::to_string(&CheckStatus::Pass).unwrap(), "\"pass\"");
+        assert_eq!(serde_json::to_string(&CheckStatus::Fail).unwrap(), "\"fail\"");
+    }
+}

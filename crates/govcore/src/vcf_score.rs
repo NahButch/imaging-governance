@@ -500,4 +500,46 @@ mod tests {
         let c = only(&r).components.iter().find(|c| c.name == "allele_validity").unwrap().clone();
         assert_eq!(c.points, INVALID_ALLELE_PENALTY);
     }
+
+    #[test]
+    fn header_only_scores_zero_variants() {
+        let r = score_vcf(&vcf(""));
+        assert_eq!(r.variant_count, 0);
+        assert!(r.parse_ok);
+    }
+
+    #[test]
+    fn symbolic_alt_is_classified_and_valid() {
+        let r = score_vcf(&vcf("1\t100\t.\tA\t<DEL>\t50\tPASS\t."));
+        let v = only(&r);
+        assert_eq!(v.variant_class, "symbolic");
+        let av = v.components.iter().find(|c| c.name == "allele_validity").unwrap();
+        assert_eq!(av.points, 0.0); // symbolic ALT is not an invalid nucleotide
+    }
+
+    #[test]
+    fn missing_af_gives_zero_rarity() {
+        let r = score_vcf(&vcf("1\t100\t.\tA\tT\t50\tPASS\tDP=30"));
+        let rarity = only(&r).components.iter().find(|c| c.name == "rarity").unwrap().clone();
+        assert_eq!(rarity.points, 0.0);
+        assert!(rarity.detail.contains("no allele-frequency"));
+    }
+
+    #[test]
+    fn gnomad_af_alias_is_read() {
+        let r = score_vcf(&vcf("1\t100\t.\tA\tT\t50\tPASS\tgnomAD_AF=0.00005"));
+        let rarity = only(&r).components.iter().find(|c| c.name == "rarity").unwrap().clone();
+        assert_eq!(rarity.points, 3.0); // ultra-rare
+        assert!(rarity.detail.starts_with("gnomAD_AF"));
+    }
+
+    #[test]
+    fn multiallelic_scores_each_alt_as_its_own_variant() {
+        let r = score_vcf(&vcf("1\t100\t.\tA\tT,GG\t50\tPASS\tAF=0.40"));
+        assert_eq!(r.variant_count, 2);
+        assert_eq!(r.variants[0].alt, "T");
+        assert_eq!(r.variants[0].variant_class, "SNV");
+        assert_eq!(r.variants[1].alt, "GG");
+        assert_eq!(r.variants[1].variant_class, "insertion");
+    }
 }
