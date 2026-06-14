@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = ["crates/govcore"]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+authors = ["NahButch"]
+repository = "https://github.com/NahButch/imaging-governance"
+
+[profile.release]
+# Deterministic, debuggable release builds for the governance core.
+lto = "thin"
+codegen-units = 1

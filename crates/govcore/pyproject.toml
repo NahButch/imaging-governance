@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "govcore"
+version = "0.1.0"
+description = "Deterministic governance core for medical-imaging / genomics model I/O."
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "NahButch" }]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+]
+
+[tool.maturin]
+# Build the cdylib in this crate into an importable `govcore` module.
+features = ["pyo3/extension-module"]
