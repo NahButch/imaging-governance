@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    name: Rust — cargo test (govcore core)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test
+        run: cargo test --manifest-path crates/govcore/Cargo.toml --verbose
+
+  python:
+    name: Python — PyO3 boundary, corpus eval, Space smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build govcore into a venv (maturin develop)
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade pip maturin
+          maturin develop --manifest-path crates/govcore/Cargo.toml
+
+      - name: PyO3 smoke import + ground-truth corpus eval
+        run: |
+          . .venv/bin/activate
+          python scripts/smoke_import.py
+          python scripts/eval_corpus.py
+
+      - name: Per-Space app smoke tests
+        run: |
+          . .venv/bin/activate
+          pip install "gradio>=4.44,<6" "numpy>=1.26" "pillow>=10.0"
+          python scripts/space_smoke.py
+
+  corpus-regen:
+    name: Python — corpus regenerates deterministically
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Regenerate corpus + confirm govcore still labels it
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade pip maturin pydicom "numpy>=1.26"
+          maturin develop --manifest-path crates/govcore/Cargo.toml
+          python scripts/generate_corpus.py
+          python scripts/eval_corpus.py
