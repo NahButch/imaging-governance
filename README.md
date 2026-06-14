@@ -97,7 +97,7 @@ real patient data anywhere; all fixtures are synthetic.
   precedence.
 - **Determinism as the credential.** No learned parameters, no randomness, no
   clock: identical bytes in produce an identical report out. That is what makes
-  the output auditable and regression-testable (28 Rust unit tests + a
+  the output auditable and regression-testable (46 Rust unit tests + a
   label-matched corpus).
 - **The boundary is the deploy story.** Because the core is an in-process PyO3
   extension, each Space is a single Python process that imports it — nothing to
@@ -141,7 +141,7 @@ scripts/              build / generate / eval / deploy helpers
 
 - CPU-only, free-tier-friendly; no GPU or network model dependency.
 - Deterministic: same input → same report, byte-for-byte.
-- All validation logic in Rust, unit-tested (28 core tests); Python is glue.
+- All validation logic in Rust, unit-tested (46 core tests); Python is glue.
 - No PHI / real patient data — synthetic fixtures with a labeling manifest.
 
 ## License
