@@ -35,9 +35,9 @@ keeps the deterministic core as the credential.
 
 | # | Space | Thesis in one line | `govcore` entry point | Status |
 |---|-------|--------------------|-----------------------|--------|
-| 1 | [`01-dicom-qc`](spaces/01-dicom-qc) 🩻 | Validate a DICOM series — geometry, completeness, header conformance, residual PHI | `qc_series` | ✅ shippable |
-| 2 | [`02-seg-governance`](spaces/02-seg-governance) 🫁 | Gate a model's segmentation mask on plausibility before downstream use | `postcheck_segmentation` | ✅ shippable |
-| 3 | [`03-vcf-explorer`](spaces/03-vcf-explorer) 🧬 | Score VCF variants with a transparent, auditable weighted-evidence model | `score_vcf` | ✅ shippable |
+| 1 | [`01-dicom-qc`](spaces/01-dicom-qc) | Validate a DICOM series — geometry, completeness, header conformance, residual PHI | `qc_series` | ✅ shippable |
+| 2 | [`02-seg-governance`](spaces/02-seg-governance) | Gate a model's segmentation mask on plausibility before downstream use | `postcheck_segmentation` | ✅ shippable |
+| 3 | [`03-vcf-explorer`](spaces/03-vcf-explorer) | Score VCF variants with a transparent, auditable weighted-evidence model | `score_vcf` | ✅ shippable |
 
 Each Space is **independently deployable** as a Docker SDK Space; a stall in one
 never blocks shipping another. The shared core is vendored into each Space's
