@@ -1,0 +1,56 @@
+{
+  "description": "Synthetic DICOM QC ground-truth corpus. No real patient data.",
+  "generator": "scripts/generate_corpus.py",
+  "fixtures": [
+    {
+      "name": "clean_control",
+      "path": "data/qc-corpus/clean_control",
+      "example_zip": "spaces/01-dicom-qc/examples/clean_control.zip",
+      "slices": 5,
+      "intended_defect": "none",
+      "expected_verdict": "pass",
+      "expected_flag": null,
+      "description": "Well-formed 5-slice axial CT, de-identified."
+    },
+    {
+      "name": "broken_geometry",
+      "path": "data/qc-corpus/broken_geometry",
+      "example_zip": "spaces/01-dicom-qc/examples/broken_geometry.zip",
+      "slices": 5,
+      "intended_defect": "broken_geometry",
+      "expected_verdict": "fail",
+      "expected_flag": "geometry.orientation",
+      "description": "One slice has an inconsistent ImageOrientationPatient."
+    },
+    {
+      "name": "missing_slices",
+      "path": "data/qc-corpus/missing_slices",
+      "example_zip": "spaces/01-dicom-qc/examples/missing_slices.zip",
+      "slices": 4,
+      "intended_defect": "missing_slices",
+      "expected_verdict": "fail",
+      "expected_flag": "completeness.instance_numbers",
+      "description": "Instance number 3 omitted from an otherwise contiguous series."
+    },
+    {
+      "name": "residual_phi",
+      "path": "data/qc-corpus/residual_phi",
+      "example_zip": "spaces/01-dicom-qc/examples/residual_phi.zip",
+      "slices": 5,
+      "intended_defect": "residual_phi",
+      "expected_verdict": "fail",
+      "expected_flag": "anonymization.phi",
+      "description": "Direct identifiers (PatientName/ID/DOB) left populated."
+    },
+    {
+      "name": "header_anomaly",
+      "path": "data/qc-corpus/header_anomaly",
+      "example_zip": "spaces/01-dicom-qc/examples/header_anomaly.zip",
+      "slices": 5,
+      "intended_defect": "header_anomaly",
+      "expected_verdict": "fail",
+      "expected_flag": "header.required_tags",
+      "description": "Required tags Modality/Rows/Columns are absent."
+    }
+  ]
+}
