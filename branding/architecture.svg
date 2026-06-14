@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1220 420" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1b2230"/>
+    </marker>
+    <style>
+      .h { font-weight:800; fill:#1b2230; }
+      .s { fill:#5b6573; }
+      .flow { stroke:#1b2230; stroke-width:3; fill:none; }
+    </style>
+  </defs>
+
+  <rect width="1220" height="420" fill="#ffffff"/>
+
+  <!-- upload -->
+  <rect x="24" y="186" width="118" height="48" rx="24" fill="#1b2230"/>
+  <text x="83" y="216" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">upload</text>
+  <path class="flow" d="M142 210 H214" marker-end="url(#arrow)"/>
+
+  <!-- Hugging Face Space container -->
+  <rect x="226" y="96" width="752" height="228" rx="18" fill="#f7f8fa" stroke="#cfd5de" stroke-width="2"/>
+  <rect x="356" y="80" width="492" height="34" rx="17" fill="#11868a"/>
+  <text x="602" y="103" font-size="15" font-weight="700" letter-spacing="0.5" fill="#fff" text-anchor="middle">each Hugging Face Space · one Python process</text>
+
+  <!-- Gradio UI card -->
+  <rect x="258" y="150" width="248" height="128" rx="14" fill="#ffffff" stroke="#e2e5ea" stroke-width="1.5"/>
+  <rect x="258" y="150" width="9" height="128" rx="4" fill="#11868a"/>
+  <text x="386" y="196" class="h" font-size="24" text-anchor="middle">Gradio UI</text>
+  <text x="386" y="224" class="s" font-size="15" text-anchor="middle">thin glue · Python</text>
+  <text x="386" y="248" class="s" font-size="13" text-anchor="middle" fill="#8a93a3">renders only — no validation logic</text>
+
+  <!-- PyO3 boundary arrow -->
+  <text x="602" y="190" font-size="16" font-weight="700" fill="#d6602e" text-anchor="middle">in-process PyO3</text>
+  <path class="flow" d="M512 212 H692" marker-end="url(#arrow)"/>
+  <text x="602" y="306" font-size="13" fill="#8a93a3" text-anchor="middle">in-process boundary — no sidecar · no network · no MCP</text>
+
+  <!-- govcore card -->
+  <rect x="698" y="150" width="248" height="128" rx="14" fill="#ffffff" stroke="#e2e5ea" stroke-width="1.5"/>
+  <rect x="937" y="150" width="9" height="128" rx="4" fill="#d6602e"/>
+  <text x="822" y="196" class="h" font-size="24" text-anchor="middle">govcore</text>
+  <text x="822" y="224" class="s" font-size="15" text-anchor="middle">deterministic Rust core</text>
+  <text x="822" y="248" class="s" font-size="13" text-anchor="middle" fill="#8a93a3">validates · gates · disposes</text>
+
+  <!-- output -->
+  <path class="flow" d="M978 210 H1040" marker-end="url(#arrow)"/>
+  <rect x="1044" y="170" width="160" height="80" rx="14" fill="#ffffff" stroke="#21a366" stroke-width="2"/>
+  <text x="1124" y="206" font-size="17" font-weight="800" fill="#1b2230" text-anchor="middle">structured</text>
+  <text x="1124" y="230" font-size="17" font-weight="800" fill="#21a366" text-anchor="middle">verdict</text>
+
+  <!-- footer caption -->
+  <text x="610" y="380" font-size="15" fill="#5b6573" text-anchor="middle">The model proposes; the deterministic engine disposes — same input, same report, byte-for-byte.</text>
+</svg>

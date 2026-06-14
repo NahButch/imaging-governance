@@ -1,13 +1,19 @@
-# imaging-governance
+<p align="center">
+  <img src="branding/arbiter/lockup.png" alt="imaging-governance — the Arbiter" width="600">
+</p>
 
-**A deterministic Rust core governs the I/O and output of probabilistic
-medical-imaging / genomics models.** Model proposes, deterministic engine
-disposes.
+<p align="center">
+  <b>A deterministic Rust core governs the I/O and output of probabilistic
+  medical-imaging / genomics models.</b><br>
+  Model proposes, deterministic engine disposes.
+</p>
 
-[![CI](https://github.com/NahButch/imaging-governance/actions/workflows/ci.yml/badge.svg)](https://github.com/NahButch/imaging-governance/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/NahButch/imaging-governance/actions/workflows/ci.yml"><img src="https://github.com/NahButch/imaging-governance/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
 
-Three independent Hugging Face Spaces share one thesis and one engine: every
+Three independent [Hugging Face Spaces](https://huggingface.co/spaces) share one thesis and one engine: every
 probabilistic step (a scanner, a segmentation network, a variant caller) hands
 its output to a single deterministic Rust crate — [`govcore`](crates/govcore) —
 which validates and gates it with pure, ordered, **unit-tested** logic. The
@@ -16,16 +22,14 @@ lives outside Rust.
 
 ## The boundary
 
-```
-            ┌─────────────────────── each HF Space (one Python process) ───────────────────────┐
- upload ──▶ │  Gradio UI (thin glue)  ──in-process PyO3──▶  govcore (deterministic Rust core)  │ ──▶ structured verdict
-            └──────────────────────────────────────────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="branding/architecture.png" alt="Architecture: upload → each Hugging Face Space (one Python process) where a thin Gradio UI calls govcore, the deterministic Rust core, in-process via PyO3 → structured verdict" width="900">
+</p>
 
 The Rust↔Python boundary is **in-process PyO3**, compiled with `maturin` — no
 sidecar, no MCP, no network call. That is the only boundary that deploys cleanly
-into a single-process Gradio Space, and it keeps the deterministic core as the
-credential.
+into a single-process [Hugging Face](https://huggingface.co) Gradio Space, and it
+keeps the deterministic core as the credential.
 
 ## The three Spaces
 
