@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 180" width="700" height="180" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <!-- Arbiter horizontal lockup (light) -->
+  <rect width="700" height="180" fill="#ffffff"/>
+  <!-- badge -->
+  <g transform="translate(28,30)">
+    <rect width="120" height="120" rx="26" fill="#1b2230"/>
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <line x1="30" y1="103" x2="86" y2="103" stroke="#ffffff" stroke-width="14"/>
+      <line x1="64" y1="52" x2="95" y2="88" stroke="#d6602e" stroke-width="14"/>
+      <rect x="25" y="31" width="52" height="24" rx="8" fill="#ffffff" transform="rotate(-42 51 43)"/>
+    </g>
+  </g>
+  <!-- wordmark -->
+  <text x="180" y="70" font-size="15" font-weight="700" letter-spacing="3" fill="#11868a">THE ARBITER</text>
+  <text x="180" y="112" font-size="42" font-weight="800" fill="#1b2230">imaging-<tspan fill="#d6602e">governance</tspan></text>
+  <text x="180" y="140" font-size="16" fill="#5b6573">model proposes · deterministic engine disposes</text>
+</svg>
